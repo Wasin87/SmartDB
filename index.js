@@ -1,17 +1,15 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const app = express();  
-const port = process.env.PORT || 3000;  
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const app = express();
+const port = process.env.PORT || 3000;
 
-// Middleware......
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-//71wPtHh9hTtiI2no
-//SmartDB
-
-const uri = "mongodb+srv://SmartDbUser:f2BWvckRLTDP4Jec@wasin3.w2xfr9.mongodb.net/?appName=Wasin3";
+// MongoDB connection
+const uri = "mongodb+srv://BillManagement:9N8hPBS8IqBIoyd7@wasin3.w2xfr9.mongodb.net/?appName=Wasin3";
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -20,73 +18,148 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
   tls: true,
-  tlsAllowInvalidCertificates: true,  // ✅ Add this line
+  tlsAllowInvalidCertificates: true,
 });
 
 // Default route
 app.get("/", (req, res) => {
-  res.send("Smart server is running");
+  res.send("Smart Bill Management server is running");
 });
 
-async function run(){
-     try{
-        await client.connect();
+async function run() {
+  try {
+    await client.connect();
+    const db = client.db("utility_db");
 
-        const db = client.db('smart_db');
-        const productsCollection = db.collection('products');
+    const billsCollection = db.collection("bills");
+    const recentBillsCollection = db.collection("recentBills");
+    const usersCollection = db.collection("users");
+    const payBillCollection = db.collection("payBill");
 
-        app.get('/products', async(req, res) =>{
-            const cursor = productsCollection.find();
-            const result = await cursor.toArray();
-            res.send(result);
-        })
+    /** USERS API **/
+    app.post("/users", async (req, res) => {
+      const newUser = req.body;
+      const email = newUser.email;
 
-         app.get('/products/:id', async(req, res) =>{
-            const id = req.params.id;
-            const query = { _id: new ObjectId(id)}
-            const result = await productsCollection.findOne(query);
-            res.send(result);
-        })
+      const existingUser = await usersCollection.findOne({ email });
+      if (existingUser) {
+        return res.send({ message: "User already exists" });
+      }
 
-        app.post('/products', async(req, res) =>{
-            const newProduct = req.body;
-            const result = await productsCollection.insertOne(newProduct);
-            res.send(result);
-        })
+      const result = await usersCollection.insertOne(newUser);
+      res.send(result);
+    });
 
+    app.get("/users", async (req, res) => {
+      const users = await usersCollection.find().toArray();
+      res.send(users);
+    });
 
-         app.patch('/products/:id', async(req, res) =>{
-            const id = req.params.id;
-            const updatedProduct = req.body;
-            const query = { _id: new ObjectId(id)}
-            const update = {
-                $set: {
-                    name: updatedProduct.name,
-                    price: updatedProduct.price
-                }
-            }
-            const result = await productsCollection.updateOne(query,update);
-            res.send(result);
-        })
-        
-         app.delete('/products/:id', async(req, res) =>{
-            const id = req.params.id;
-            const query = { _id: new ObjectId(id)}
-            const result = await productsCollection.deleteOne(query);
-            res.send(result);
-        })
+    /** BILLS API **/
+    app.get("/bills", async (req, res) => {
+      const { category, limit } = req.query;
+      const query = {};
+      if (category) query.category = category;
 
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
-     }
-     finally{
+      let cursor = billsCollection.find(query).sort({ date: -1 });
+      if (limit) cursor = cursor.limit(parseInt(limit));
 
-     }
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    app.get("/bills/:id", async (req, res) => {
+      const id = req.params.id;
+      const bill = await billsCollection.findOne({ _id: new ObjectId(id) });
+      res.send(bill);
+    });
+
+    app.post("/bills", async (req, res) => {
+      const newBill = req.body;
+      const result = await billsCollection.insertOne(newBill);
+      res.send(result);
+    });
+
+    app.patch("/bills/:id", async (req, res) => {
+      const id = req.params.id;
+      const updatedBill = req.body;
+
+      const result = await billsCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: updatedBill }
+      );
+      res.send(result);
+    });
+
+    app.delete("/bills/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await billsCollection.deleteOne({ _id: new ObjectId(id) });
+      res.send(result);
+    });
+
+    /** RECENT BILLS API **/
+    app.get("/recentBills", async (req, res) => {
+      const { limit } = req.query;
+      let cursor = recentBillsCollection.find().sort({ date: -1 });
+      if (limit) cursor = cursor.limit(parseInt(limit));
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    app.post("/recentBills", async (req, res) => {
+      try {
+        const recentBill = req.body;
+        if (
+          !recentBill.title ||
+          !recentBill.category ||
+          !recentBill.email ||
+          !recentBill.location ||
+          !recentBill.amount
+        ) {
+          return res.status(400).send({ message: "Missing required fields" });
+        }
+
+        if (!recentBill.date) {
+          recentBill.date = new Date().toISOString().split("T")[0];
+        }
+
+        const result = await recentBillsCollection.insertOne(recentBill);
+        res.status(201).send({ message: "Recent bill added successfully", result });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: "Failed to add recent bill", error });
+      }
+    });
+
+    /** ✅ PAY BILL API **/
+    app.get("/payBill", async (req, res) => {
+      const result = await payBillCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.post("/payBill", async (req, res) => {
+      const newBill = req.body;
+      const result = await payBillCollection.insertOne(newBill);
+      res.send(result);
+    });
+
+    // ✅ DELETE Pay Bill
+    app.delete("/payBill/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await payBillCollection.deleteOne({ _id: new ObjectId(id) });
+      res.send(result);
+    });
+
+    await client.db("admin").command({ ping: 1 });
+    console.log("✅ Successfully connected to MongoDB!");
+  } finally {
+    // Optional: client.close();
+  }
 }
 
-run().catch(console.dir)
+run().catch(console.dir);
 
 // Server listen
 app.listen(port, () => {
-  console.log(`✅ Smart server is running on port ${port}`);
+  console.log(`✅ Utility Bill Management server running on port ${port}`);
 });
