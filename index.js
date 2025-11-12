@@ -124,7 +124,7 @@ async function run() {
         }
 
         const result = await recentBillsCollection.insertOne(recentBill);
-        res.status(201).send({ message: "Recent bill added successfully", result });
+        res.status(201).send({ message: "Recent Bills added successfully", result });
       } catch (error) {
         console.error(error);
         res.status(500).send({ message: "Failed to add recent bill", error });
@@ -144,7 +144,7 @@ async function run() {
     });
 
     // DELETE Pay Bill
-    
+
     app.delete("/payBill/:id", async (req, res) => {
       const id = req.params.id;
       const result = await payBillCollection.deleteOne({ _id: new ObjectId(id) });
