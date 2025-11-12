@@ -131,7 +131,7 @@ async function run() {
       }
     });
 
-    /** ✅ PAY BILL API **/
+    /** PAY BILL API **/
     app.get("/payBill", async (req, res) => {
       const result = await payBillCollection.find().toArray();
       res.send(result);
@@ -143,7 +143,8 @@ async function run() {
       res.send(result);
     });
 
-    // ✅ DELETE Pay Bill
+    // DELETE Pay Bill
+    
     app.delete("/payBill/:id", async (req, res) => {
       const id = req.params.id;
       const result = await payBillCollection.deleteOne({ _id: new ObjectId(id) });
