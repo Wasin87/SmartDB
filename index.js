@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 // MongoDB connection
-const uri = "mongodb+srv://BillManagement:9N8hPBS8IqBIoyd7@wasin3.w2xfr9.mongodb.net/?appName=Wasin3";
+const uri = process.env.MONGODB_URI || "mongodb+srv://BillManagement:9N8hPBS8IqBIoyd7@wasin3.w2xfr9.mongodb.net/utility_db?retryWrites=true&w=majority&appName=Wasin3";
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -440,5 +440,5 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Server listen
 app.listen(port, () => {
-  console.log(`✅ Utility Bill Management server running on port ${port}`);
+  console.log(` Utility Bill Management server running on port ${port}`);
 });
