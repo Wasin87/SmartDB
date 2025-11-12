@@ -23,7 +23,7 @@ const client = new MongoClient(uri, {
 
 // Default route
 app.get("/", (req, res) => {
-  res.send("Smart Bill Management server is running");
+  res.send("Smart Bill Management server is running....");
 });
 
 async function run() {
