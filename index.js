@@ -127,7 +127,7 @@ async function run() {
         res.status(201).send({ message: "Recent bill added successfully", result });
       } catch (error) {
         console.error(error);
-        res.status(500).send({ message: "Failed to add recent bill", error });
+        res.status(500).send({ message: "Failed to Add recent bill", error });
       }
     });
 
