@@ -28,7 +28,7 @@ app.get("/", (req, res) => {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
     const db = client.db("utility_db");
 
     const billsCollection = db.collection("bills");
@@ -417,10 +417,10 @@ async function run() {
       }
     });
 
-    await client.db("admin").command({ ping: 1 });
-    console.log("✅ Successfully connected to MongoDB!");
+    // await client.db("admin").command({ ping: 1 });
+    // console.log("Successfully connected to MongoDB!");
   } catch (error) {
-    console.error("❌ MongoDB connection failed:", error);
+    console.error("MongoDB connection failed:", error);
     process.exit(1);
   }
 }
@@ -440,5 +440,5 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Server listen
 app.listen(port, () => {
-  console.log(` Utility Bill Management server running on port ${port}`);
+  console.log(`Utility Bill Management server running on port ${port}`);
 });
